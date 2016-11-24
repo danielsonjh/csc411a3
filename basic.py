@@ -70,10 +70,10 @@ def main(_):
     }
 
     biases = {
-        'bc1': tf.Variable(tf.random_normal([32])),
-        'bc2': tf.Variable(tf.random_normal([64])),
-        'bd1': tf.Variable(tf.random_normal([1024])),
-        'out': tf.Variable(tf.random_normal([8]))
+        'bc1': tf.Variable(tf.random_normal([weights['wc1'].get_shape().as_list()[3]])),
+        'bc2': tf.Variable(tf.random_normal([weights['wc2'].get_shape().as_list()[3]])),
+        'bd1': tf.Variable(tf.random_normal([weights['wd1'].get_shape().as_list()[1]])),
+        'out': tf.Variable(tf.random_normal([weights['out'].get_shape().as_list()[1]]))
     }
 
     # Construct model
