@@ -4,7 +4,7 @@ import Image
 
 n_labels = 8
 n_data = 7000
-n_train = 6800
+n_train = 7000
 
 
 class DataLoader:
@@ -20,7 +20,7 @@ class DataLoader:
         pass
 
     def prepare_train_val_data(self):
-        all_x = self.__load_data('train')
+        all_x = self.__load_data('val')
         all_y = self.__load_labels()
         # TODO: Shuffle x,y pairs together?
         self.__train_x = all_x[:n_train]
@@ -54,6 +54,7 @@ class DataLoader:
         data = np.asarray(image_list)
 
         print(data.shape)
+        print(data.dtype)
 
         return data
 
@@ -61,11 +62,12 @@ class DataLoader:
     def __load_labels():
         raw_labels = np.loadtxt(open("train.csv", "rb"), delimiter=",", usecols=(1,), skiprows=1).astype(int)
         # Convert raw labels to one-hot encoding
-        labels = np.zeros((n_data, n_labels))
+        labels = np.zeros((n_data, n_labels), dtype=np.uint8)
         for i in range(n_data):
             labels[i, raw_labels[i] - 1] = 1
 
         print(labels.shape)
+        print(labels.dtype)
 
         return labels
 

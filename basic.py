@@ -71,9 +71,9 @@ def main(_):
         'wc2': tf.Variable(tf.random_normal([10, 10, 30, 50])),
         'wc3': tf.Variable(tf.random_normal([10, 10, 50, 50])),
         # fully connected (input dim, output dim)
-        'wd1': tf.Variable(tf.random_normal([16 * 16 * 50, 2048])),
+        'wd1': tf.Variable(tf.random_normal([16 * 16 * 50, 3000])),
         # inputs, outputs (class prediction)
-        'out': tf.Variable(tf.random_normal([2048, 8]))
+        'out': tf.Variable(tf.random_normal([3000, 8]))
     }
 
     biases = {
@@ -104,6 +104,7 @@ def main(_):
 
     tf.scalar_summary("loss", cost)
     tf.scalar_summary("accuracy", accuracy)
+    tf.image_summary('wc1', tf.transpose(weights['wc1'], [3, 0, 1, 2]), max_images=30)
     merged_summary_op = tf.merge_all_summaries()
 
     # Launch the graph
@@ -126,6 +127,7 @@ def main(_):
                                                                   y: batch_y,
                                                                   keep_prob: 1.})
                 summary_writer.add_summary(summary, step)
+
                 print("Iter " + str(step * batch_size) + ", Minibatch Loss= " + \
                       "{:.6f}".format(loss) + ", Training Accuracy= " + \
                       "{:.5f}".format(acc))
