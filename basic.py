@@ -3,8 +3,8 @@ from dataloader import dl, n_train
 
 learning_rate = 0.001
 training_epochs = 30
-batch_size = 100
-dropout = 0.75  # Dropout, probability to keep units
+batch_size = 200
+dropout = 1.0  # Dropout, probability to keep units
 
 batches_per_epoch = n_train / batch_size
 display_step = 10
@@ -26,6 +26,9 @@ def maxpool2d(x, k=2):
 def conv_net(x, weights, biases, dropout):
     # Reshape input picture
     x = tf.reshape(x, shape=[-1, 128, 128, 3])
+    x = tf.nn.avg_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+
+    tf.image_summary('x', x)
 
     # Convolution Layer
     conv1 = conv2d(x, weights['wc1'], biases['bc1'])
@@ -37,22 +40,20 @@ def conv_net(x, weights, biases, dropout):
     # Max Pooling (down-sampling)
     conv2 = maxpool2d(conv2, k=2)
 
-    # Convolution Layer
-    conv3 = conv2d(conv2, weights['wc3'], biases['bc3'])
-    # Max Pooling (down-sampling)
-    conv3 = maxpool2d(conv3, k=2)
-
     # Fully connected layer
     # Reshape conv2 output to fit fully connected layer input
-    fc1 = tf.reshape(conv3, [-1, weights['wd1'].get_shape().as_list()[0]])
+    fc1 = tf.reshape(conv2, [-1, weights['wd1'].get_shape().as_list()[0]])
 
     fc1 = tf.add(tf.matmul(fc1, weights['wd1']), biases['bd1'])
     fc1 = tf.nn.relu(fc1)
-    # Apply Dropout
     fc1 = tf.nn.dropout(fc1, dropout)
 
+    fc2 = tf.add(tf.matmul(fc1, weights['wd2']), biases['bd2'])
+    fc2 = tf.nn.relu(fc2)
+    fc2 = tf.nn.dropout(fc2, dropout)
+
     # Output, class prediction
-    out = tf.add(tf.matmul(fc1, weights['out']), biases['out'])
+    out = tf.add(tf.matmul(fc2, weights['out']), biases['out'])
     return out
 
 
@@ -66,21 +67,20 @@ def main(_):
     keep_prob = tf.placeholder(tf.float32)  # dropout (keep probability)
 
     weights = {
-        # conv (h, w, c, n)
-        'wc1': tf.Variable(tf.random_normal([10, 10, 3, 30])),
-        'wc2': tf.Variable(tf.random_normal([10, 10, 30, 50])),
-        'wc3': tf.Variable(tf.random_normal([10, 10, 50, 50])),
+        'wc1': tf.Variable(tf.random_normal([15, 15, 3, 64])),
+        'wc2': tf.Variable(tf.random_normal([10, 10, 64, 64])),
         # fully connected (input dim, output dim)
-        'wd1': tf.Variable(tf.random_normal([16 * 16 * 50, 3000])),
+        'wd1': tf.Variable(tf.random_normal([16 * 16 * 64, 800])),
+        'wd2': tf.Variable(tf.random_normal([800, 800])),
         # inputs, outputs (class prediction)
-        'out': tf.Variable(tf.random_normal([3000, 8]))
+        'out': tf.Variable(tf.random_normal([800, 8]))
     }
 
     biases = {
         'bc1': tf.Variable(tf.random_normal([weights['wc1'].get_shape().as_list()[3]])),
         'bc2': tf.Variable(tf.random_normal([weights['wc2'].get_shape().as_list()[3]])),
-        'bc3': tf.Variable(tf.random_normal([weights['wc3'].get_shape().as_list()[3]])),
         'bd1': tf.Variable(tf.random_normal([weights['wd1'].get_shape().as_list()[1]])),
+        'bd2': tf.Variable(tf.random_normal([weights['wd2'].get_shape().as_list()[1]])),
         'out': tf.Variable(tf.random_normal([weights['out'].get_shape().as_list()[1]]))
     }
 
