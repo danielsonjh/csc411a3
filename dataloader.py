@@ -20,7 +20,7 @@ class DataLoader:
         pass
 
     def prepare_train_val_data(self):
-        all_x = self.__load_data('val')
+        all_x = self.__load_data('train')
         all_y = self.__load_labels()
         # TODO: Shuffle x,y pairs together?
         self.__train_x = all_x[:n_train]
