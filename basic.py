@@ -7,8 +7,9 @@ batch_size = 200
 dropout = 1.0  # Dropout, probability to keep units
 
 batches_per_epoch = n_train / batch_size
-display_step = 10
-logs_path = '/tmp/tensorflow_logs/basic'
+display_step = 50
+train_logs_path = '/tmp/tensorflow_logs/basic_train'
+valid_logs_path = '/tmp/tensorflow_logs/basic_valid'
 model_path = 'basic.ckpt'
 
 
@@ -113,7 +114,8 @@ def main(_):
     with tf.Session() as sess:
         sess.run(init)
 
-        summary_writer = tf.train.SummaryWriter(logs_path, graph=tf.get_default_graph())
+        train_summary_writer = tf.train.SummaryWriter(train_logs_path, graph=tf.get_default_graph())
+        valid_summary_writer = tf.train.SummaryWriter(valid_logs_path, graph=tf.get_default_graph())
 
         step = 1
         # Keep training until reach max iterations
@@ -125,29 +127,29 @@ def main(_):
                                            keep_prob: dropout})
             if step % display_step == 0:
                 # Calculate batch loss and accuracy
-                loss, acc, summary = sess.run([cost, accuracy, merged_summary_op], feed_dict={x: batch_x,
-                                                                  y: batch_y,
-                                                                  keep_prob: 1.})
-                summary_writer.add_summary(summary, step)
+                loss, acc, summary = sess.run([cost, accuracy, merged_summary_op],
+                                              feed_dict={x: batch_x, y: batch_y, keep_prob: 1.})
+                train_summary_writer.add_summary(summary, step)
 
                 print("Batch " + str(step) + ", Minibatch Loss= " + \
                       "{:.6f}".format(loss) + ", Training Accuracy= " + \
                       "{:.5f}".format(acc))
+
+                valid_batch = 0
+                valid_acc = 0
+                n_valid_batches = n_valid / batch_size
+                while valid_batch < n_valid_batches:
+                    valid_batch += 1
+                    batch_x, batch_y = dl.next_valid_batch(batch_size)
+                    valid_batch_acc = sess.run(accuracy, feed_dict={x: batch_x, y: batch_y, keep_prob: 1.})
+                    valid_acc += valid_batch_acc
+                valid_acc /= n_valid_batches
+                valid_summary = tf.Summary()
+                valid_summary.value.add(tag="accuracy", simple_value=valid_acc)
+                valid_summary_writer.add_summary(valid_summary, step)
+                print("Validation Accuracy= " + "{:.5f}".format(valid_acc))
+
             step += 1
-
-        valid_batch = 0
-        valid_acc = 0
-        n_valid_batches = n_valid / batch_size
-        while valid_batch < n_valid_batches:
-            valid_batch += 1
-            batch_x, batch_y = dl.next_valid_batch(batch_size)
-            valid_batch_acc = sess.run(accuracy, feed_dict={x: batch_x, y: batch_y, keep_prob: 1.})
-            valid_acc += valid_batch_acc
-            print("Validation Batch Accuracy= " + "{:.5f}".format(valid_batch_acc))
-        valid_acc /= n_valid_batches
-
-        # Calculate accuracy
-        print("Validation Accuracy: " + "{:.5f}".format(valid_acc))
 
         saver = tf.train.Saver()
         save_path = saver.save(sess, model_path)
