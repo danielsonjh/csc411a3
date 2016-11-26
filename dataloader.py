@@ -4,17 +4,23 @@ import Image
 
 n_labels = 8
 n_data = 7000
-n_train = 7000
+n_train = 6000
+n_valid = n_data - n_train
+n_test = 970
 
 
 class DataLoader:
 
-    valid_x = []
-    valid_y = []
+    __valid_x = []
+    __valid_y = []
+    __valid_batch_counter = 0
 
     __train_x = []
     __train_y = []
-    __batch_counter = 0
+    __train_batch_counter = 0
+
+    __test_x = []
+    __test_batch_counter = 0
 
     def __init__(self):
         pass
@@ -25,24 +31,47 @@ class DataLoader:
         # TODO: Shuffle x,y pairs together?
         self.__train_x = all_x[:n_train]
         self.__train_y = all_y[:n_train]
-        self.valid_x = all_x[n_train:]
-        self.valid_y = all_y[n_train:]
+        self.__valid_x = all_x[n_train:]
+        self.__valid_y = all_y[n_train:]
         print('train')
         print(self.__train_x.shape)
         print(self.__train_y.shape)
         print('valid')
-        print(self.valid_x.shape)
-        print(self.valid_y.shape)
+        print(self.__valid_x.shape)
+        print(self.__valid_y.shape)
 
-    def next_batch(self, batch_size):
-        if n_train % batch_size != 0:
-            raise ValueError('batch size ' + batch_size + ' does not fit into ' + n_train)
-        start = self.__batch_counter % n_train
-        end = start + batch_size
-        self.__batch_counter += batch_size
-        batch_x = self.__train_x[start:end]
-        batch_y = self.__train_y[start:end]
+    def prepare_test_data(self):
+        self.__test_x = self.__load_data('val')
+        print('test')
+        print(self.__test_x.shape)
+
+    def next_train_batch(self, batch_size):
+        batch_x, batch_y, new_batch_counter = self.__process_next_batch(self.__train_x, self.__train_y, n_train,
+                                                                        self.__train_batch_counter, batch_size)
+        self.__train_batch_counter = new_batch_counter
         return batch_x, batch_y
+
+    def next_valid_batch(self, batch_size):
+        batch_x, batch_y, new_batch_counter = self.__process_next_batch(self.__valid_x, self.__valid_y, n_valid,
+                                                                        self.__valid_batch_counter, batch_size)
+        self.__valid_batch_counter = new_batch_counter
+        return batch_x, batch_y
+
+    def next_test_batch(self, batch_size):
+        batch_x, batch_y, new_batch_counter = self.__process_next_batch(self.__test_x, self.__test_x, n_train,
+                                                                        self.__test_batch_counter, batch_size)
+        self.__test_batch_counter = new_batch_counter
+        return batch_x
+
+    @staticmethod
+    def __process_next_batch(x, y, n, batch_counter, batch_size):
+        start = batch_counter % n
+        end = start + batch_size
+        new_batch_counter = batch_counter + batch_size
+        batch_x = x[start:end]
+        batch_y = y[start:end]
+
+        return batch_x, batch_y, new_batch_counter
 
     @staticmethod
     def __load_data(data_dir):
@@ -53,9 +82,6 @@ class DataLoader:
             image_list.append(np.asarray(Image.open(filename)))
         data = np.asarray(image_list)
 
-        print(data.shape)
-        print(data.dtype)
-
         return data
 
     @staticmethod
@@ -65,9 +91,6 @@ class DataLoader:
         labels = np.zeros((n_data, n_labels), dtype=np.uint8)
         for i in range(n_data):
             labels[i, raw_labels[i] - 1] = 1
-
-        print(labels.shape)
-        print(labels.dtype)
 
         return labels
 
