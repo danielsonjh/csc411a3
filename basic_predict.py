@@ -19,7 +19,7 @@ with tf.Session() as sess:
         csvwriter = csv.writer(csvfile, delimiter=',')
         csvwriter.writerow(['Id', 'Prediction'])
         id = 1
-        while id <= n_test:
+        while id <= dl.n_test:
             batch_x = dl.next_test_batch(batch_size)
             batch_pred = sess.run(pred, feed_dict={x: batch_x, keep_prob: 1.0})
             batch_pred = tf.argmax(batch_pred, 1).eval() + 1

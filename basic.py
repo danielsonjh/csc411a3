@@ -6,7 +6,7 @@ training_epochs = 30
 batch_size = 200
 dropout = 1.0  # Dropout, probability to keep units
 
-batches_per_epoch = n_train / batch_size
+batches_per_epoch = dl.n_train / batch_size
 display_step = 50
 train_logs_path = '/tmp/tensorflow_logs/basic_train'
 valid_logs_path = '/tmp/tensorflow_logs/basic_valid'
@@ -137,7 +137,7 @@ def main(_):
 
                 valid_batch = 0
                 valid_acc = 0
-                n_valid_batches = n_valid / batch_size
+                n_valid_batches = dl.n_valid / batch_size
                 while valid_batch < n_valid_batches:
                     valid_batch += 1
                     batch_x, batch_y = dl.next_valid_batch(batch_size)
@@ -161,8 +161,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--data_dir', type=str, default='/tmp/data',
-    #                   help='Directory for storing data')
-    # FLAGS = parser.parse_args()
     tf.app.run()
