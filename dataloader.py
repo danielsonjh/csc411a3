@@ -81,7 +81,7 @@ class DataLoader:
     def __load_data(data_dir):
         filename_list = map(lambda f: os.path.join(data_dir, f), os.listdir(data_dir))
         filename_list.sort()
-        filename_list = filename_list[:100]
+        # filename_list = filename_list[:100]
         image_list = []
         for filename in filename_list:
             image_list.append(np.asarray(Image.open(filename)))
@@ -92,8 +92,8 @@ class DataLoader:
     @staticmethod
     def __load_labels():
         raw_labels = np.loadtxt(open("train.csv", "rb"), delimiter=",", usecols=(1,), skiprows=1).astype(int)
-        return raw_labels[:100]
-        # return raw_labels
+        # return raw_labels[:100]
+        return raw_labels
 
     @staticmethod
     def __one_hot_encode_labels(raw_labels):
@@ -106,17 +106,12 @@ class DataLoader:
     @staticmethod
     def __augment_data(x, y):
         """
-        make label counts dictionary
-        for each class with label count not max
-            while label count is not max do a step to every image in the set
+            Apply these operations to images in classes with low count until they match the max count
             1. flip LR (2)
             2. crop and resize different spots (5)
             3. adjust brightness (2)
             4. adjust contrast (2)
             5. adjust saturation (4)
-        for each image in lowest label counts
-            crop image
-            check if label count is max
         """
 
         label_counts = np.bincount(y)
@@ -192,6 +187,8 @@ class DataLoader:
             for label in range(1, len(label_counts)):
                 # Apply each op type
                 for op_type in range(0, len(image_ops)):
+                    print 'Applying op type {0} to class {1}'.format(op_type + 1, label)
+
                     n_ops_in_type = len(image_ops[op_type])
                     # To every image
                     for i in range(0, len(x_in_label[label])):
@@ -204,6 +201,8 @@ class DataLoader:
                             x_in_label[label] = np.concatenate((x_in_label[label], np.asarray([new_image])))
                             label_counts[label] += 1
                             op_index += 1
+
+                print 'Done augmenting class {0}'.format(label)
 
         print(np.bincount(y))
         print(x.shape)
@@ -218,6 +217,9 @@ class DataLoader:
             for i in range(0, n_in_label):
                 fig.add_subplot(grid_size, grid_size, i+1).imshow(x_in_label[label-1][i])
             plt.show()
+
+        print('Saving data...')
+        np.savez_compressed('train_aug.npz', x=x, y=y)
 
 dl = DataLoader()
 
