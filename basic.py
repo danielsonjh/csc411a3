@@ -1,5 +1,5 @@
 import tensorflow as tf
-from dataloader import *
+from data_loader import *
 
 learning_rate = 0.001
 training_epochs = 30

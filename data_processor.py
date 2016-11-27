@@ -124,7 +124,7 @@ class DataProcessor:
                             op_index += 1
 
                     end_time = time.time()
-                    print 'Took {0}s'.format(start_time - end_time)
+                    print 'Took {0}s'.format(end_time - start_time)
 
                 print 'Done augmenting class {0}'.format(label)
                 np.savez_compressed(train_data_temp_filename, x=x, y=y)
