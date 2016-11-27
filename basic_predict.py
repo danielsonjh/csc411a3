@@ -9,7 +9,7 @@ with tf.Session() as sess:
     sess.run(init)
 
     print "Restoring model..."
-    saver = tf.train.Saver()
+    saver = tf.train.import_meta_graph(model_path + '.meta')
     saver.restore(sess, model_path)
     print "Model restored from file: %s" % model_path
 

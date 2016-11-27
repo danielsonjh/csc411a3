@@ -172,9 +172,10 @@ class DataProcessor:
         # return raw_labels[:100]
         return raw_labels
 
+if __name__ == '__main__':
 
-dp = DataProcessor()
+    dp = DataProcessor()
 
-dp.load_augment_and_save_train_data()
-# dp.load_augment_and_save_train_data(resume_from_file=True)
-# dp.load_and_save_test_data()
+    # dp.load_augment_and_save_train_data()
+    # dp.load_augment_and_save_train_data(resume_from_file=True)
+    dp.load_and_save_test_data()

@@ -1,12 +1,12 @@
 import tensorflow as tf
-from data_loader import *
+import numpy as np
+from data_loader import dl
 
 learning_rate = 0.001
-training_epochs = 30
-batch_size = 200
+training_epochs = 50
+batch_size = 250
 dropout = 1.0  # Dropout, probability to keep units
 
-batches_per_epoch = dl.n_train / batch_size
 display_step = 50
 train_logs_path = '/tmp/tensorflow_logs/basic_train'
 valid_logs_path = '/tmp/tensorflow_logs/basic_valid'
@@ -85,7 +85,7 @@ def conv_net():
 
 def main(_):
 
-    dl.prepare_train_val_data()
+    dl.prepare_train_val_data(train_ratio=0.9)
 
     # Construct model
     with tf.name_scope('Model'):
@@ -119,7 +119,10 @@ def main(_):
 
         step = 1
         # Keep training until reach max iterations
-        while step < batches_per_epoch * training_epochs:
+        batches_per_epoch = dl.n_train / batch_size
+        n_batches = batches_per_epoch * training_epochs
+        print 'Number of batches {0}'.format(n_batches)
+        while step < n_batches:
             batch_x, batch_y = dl.next_train_batch(batch_size)
             # Run optimization op (backprop)
             sess.run(optimizer, feed_dict={x: batch_x,
@@ -137,13 +140,12 @@ def main(_):
 
                 valid_batch = 0
                 valid_acc = 0
-                n_valid_batches = dl.n_valid / batch_size
+                n_valid_batches = np.ceil(float(dl.n_valid) / batch_size)
                 while valid_batch < n_valid_batches:
                     valid_batch += 1
                     batch_x, batch_y = dl.next_valid_batch(batch_size)
                     valid_batch_acc = sess.run(accuracy, feed_dict={x: batch_x, y: batch_y, keep_prob: 1.})
-                    valid_acc += valid_batch_acc
-                valid_acc /= n_valid_batches
+                    valid_acc += valid_batch_acc * batch_x.shape[0] / dl.n_valid
                 valid_summary = tf.Summary()
                 valid_summary.value.add(tag="accuracy", simple_value=valid_acc)
                 valid_summary_writer.add_summary(valid_summary, step)
