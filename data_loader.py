@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from random import shuffle
-from data_processor import train_data_filename, test_data_filename
+from data_processor import train_data_filename, test_data_filename, orig_train_data_filename
+
 
 class DataLoader:
 
@@ -25,6 +26,15 @@ class DataLoader:
     def __init__(self):
         pass
 
+    def prepare_train_data_for_testing_prediction(self):
+        data = np.load(orig_train_data_filename)
+        x = data['x']
+        y = data['y']
+        self.__train_x = x
+        self.__train_y = y
+        self.__train_y = self.__one_hot_encode_labels(self.__train_y)
+        self.n_train = self.__train_x.shape[0]
+
     def prepare_train_val_data(self, train_ratio):
         data = np.load(train_data_filename)
         x = data['x']
@@ -36,11 +46,11 @@ class DataLoader:
 
         # Separate data evenly among classes
         n_labels = np.max(y)
-        n_train_in_label = int(self.n_data / n_labels * train_ratio)
         train_indices = []
         valid_indices = []
         for label in range(1, n_labels+1):
             label_indices = np.squeeze(np.argwhere(y == label))
+            n_train_in_label = len(label_indices) * train_ratio
             train_indices.extend(label_indices[:n_train_in_label])
             valid_indices.extend(label_indices[n_train_in_label:])
 

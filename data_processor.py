@@ -7,6 +7,7 @@ import time
 
 train_data_filename = 'train.npz'
 train_data_temp_filename = 'train_temp.npz'
+orig_train_data_filename = 'orig_train.npz'
 test_data_filename = 'test.npz'
 
 
@@ -148,10 +149,17 @@ class DataProcessor:
         np.savez_compressed(train_data_filename, x=x, y=y)
         print('Done')
 
+    def load_and_save_orig_train_data(self):
+        x = self.__load_data('train')
+        y = self.__load_labels()
+        print('Saving data...')
+        np.savez_compressed(orig_train_data_filename, x=x, y=y)
+        print('Done')
+
     def load_and_save_test_data(self):
         test_x = self.__load_data('val')
         print('Saving data...')
-        np.savez_compressed(test_data_filename, x = test_x)
+        np.savez_compressed(test_data_filename, x=test_x)
         print('Done')
 
     @staticmethod
@@ -178,4 +186,5 @@ if __name__ == '__main__':
 
     # dp.load_augment_and_save_train_data()
     # dp.load_augment_and_save_train_data(resume_from_file=True)
-    dp.load_and_save_test_data()
+    # dp.load_and_save_test_data()
+    dp.load_and_save_orig_train_data()
