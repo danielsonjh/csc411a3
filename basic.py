@@ -2,11 +2,11 @@ import tensorflow as tf
 import numpy as np
 from data_loader import dl
 
-learning_rate = 0.001
+learning_rate = 0.0001
 regularization_rate = 0.01
 training_epochs = 50
 batch_size = 128
-dropout = 1.0
+dropout = 0.5
 
 display_step = 50
 train_logs_path = '/tmp/tensorflow_logs/basic_train'
@@ -33,29 +33,35 @@ def conv_net():
     y = tf.placeholder(tf.float32, [None, 8])
     keep_prob = tf.placeholder(tf.float32)  # dropout (keep probability)
 
+    init_max = 0.01
+
     weights = {
-        'c1': tf.Variable(tf.random_normal([5, 5, 3, 64])),
-        'c2': tf.Variable(tf.random_normal([3, 3, 64, 128])),
-        'c3': tf.Variable(tf.random_normal([3, 3, 128, 256])),
-        'fc1': tf.Variable(tf.random_normal([8 * 8 * 256, 1024])),
-        'fc2': tf.Variable(tf.random_normal([1024, 1024])),
-        'out': tf.Variable(tf.random_normal([1024, 8]))
+        'c1': tf.Variable(init_max * tf.random_normal([7, 7, 3, 96])),
+        'c2': tf.Variable(init_max * tf.random_normal([5, 5, 96, 256])),
+        'c3': tf.Variable(init_max * tf.random_normal([3, 3, 256, 384])),
+        'c4': tf.Variable(init_max * tf.random_normal([3, 3, 384, 384])),
+        'c5': tf.Variable(init_max * tf.random_normal([3, 3, 384, 256])),
+        'fc1': tf.Variable(init_max * tf.random_normal([8 * 8 * 256, 1024])),
+        'fc2': tf.Variable(init_max * tf.random_normal([1024, 1024])),
+        'out': tf.Variable(init_max * tf.random_normal([1024, 8]))
     }
 
     biases = {
-        'c1': tf.Variable(tf.random_normal([weights['c1'].get_shape().as_list()[3]])),
-        'c2': tf.Variable(tf.random_normal([weights['c2'].get_shape().as_list()[3]])),
-        'c3': tf.Variable(tf.random_normal([weights['c3'].get_shape().as_list()[3]])),
-        'fc1': tf.Variable(tf.random_normal([weights['fc1'].get_shape().as_list()[1]])),
-        'fc2': tf.Variable(tf.random_normal([weights['fc2'].get_shape().as_list()[1]])),
-        'out': tf.Variable(tf.random_normal([weights['out'].get_shape().as_list()[1]]))
+        'c1': tf.Variable(init_max * tf.random_normal([weights['c1'].get_shape().as_list()[3]])),
+        'c2': tf.Variable(init_max * tf.random_normal([weights['c2'].get_shape().as_list()[3]])),
+        'c3': tf.Variable(init_max * tf.random_normal([weights['c3'].get_shape().as_list()[3]])),
+        'c4': tf.Variable(init_max * tf.random_normal([weights['c4'].get_shape().as_list()[3]])),
+        'c5': tf.Variable(init_max * tf.random_normal([weights['c5'].get_shape().as_list()[3]])),
+        'fc1': tf.Variable(init_max * tf.random_normal([weights['fc1'].get_shape().as_list()[1]])),
+        'fc2': tf.Variable(init_max * tf.random_normal([weights['fc2'].get_shape().as_list()[1]])),
+        'out': tf.Variable(init_max * tf.random_normal([weights['out'].get_shape().as_list()[1]]))
     }
 
     # Reshape input picture
     x_in = tf.reshape(x, shape=[-1, 128, 128, 3])
     tf.image_summary('x_in', x_in)
 
-    # Convolution Layers, strides=0
+    # Convolution Layers
     conv = conv2d_with_relu(x_in, weights['c1'], biases['c1'], strides=2)
     conv = maxpool2d(conv, k=2)
 
@@ -63,6 +69,8 @@ def conv_net():
     conv = maxpool2d(conv, k=2)
 
     conv = conv2d_with_relu(conv, weights['c3'], biases['c3'])
+    conv = conv2d_with_relu(conv, weights['c4'], biases['c4'])
+    conv = conv2d_with_relu(conv, weights['c5'], biases['c5'])
     conv = maxpool2d(conv, k=2)
 
     # Fully connected layers
@@ -110,7 +118,7 @@ def main(_):
 
     tf.scalar_summary("loss", cost)
     tf.scalar_summary("accuracy", accuracy)
-    tf.image_summary('c1', tf.transpose(weights['c1'], [3, 0, 1, 2]), max_images=30)
+    tf.image_summary('filters 1', tf.transpose(weights['c1'], [3, 0, 1, 2]), max_images=30)
     merged_summary_op = tf.merge_all_summaries()
 
     # Launch the graph
