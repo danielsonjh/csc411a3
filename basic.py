@@ -3,10 +3,10 @@ import numpy as np
 from data_loader import dl
 
 learning_rate = 0.001
-regularization_rate = 0.0
-training_epochs = 40
-batch_size = 192
-dropout = 1.0 # Dropout, probability to keep units
+regularization_rate = 0.01
+training_epochs = 50
+batch_size = 128
+dropout = 1.0
 
 display_step = 50
 train_logs_path = '/tmp/tensorflow_logs/basic_train'
@@ -34,61 +34,56 @@ def conv_net():
     keep_prob = tf.placeholder(tf.float32)  # dropout (keep probability)
 
     weights = {
-        'wc1': tf.Variable(tf.random_normal([15, 15, 3, 64]), name='wc1'),
-        'wc2': tf.Variable(tf.random_normal([9, 9, 64, 64]), name='wc2'),
-        # 'wc3': tf.Variable(tf.random_normal([3, 3, 96, 128])),
-        'wd1': tf.Variable(tf.random_normal([16 * 16 * 64, 1024]), name='wd1'),
-        # 'wd2': tf.Variable(tf.random_normal([1024, 1024])),
-        'out': tf.Variable(tf.random_normal([1024, 8]), name='out')
+        'c1': tf.Variable(tf.random_normal([5, 5, 3, 64])),
+        'c2': tf.Variable(tf.random_normal([3, 3, 64, 128])),
+        'c3': tf.Variable(tf.random_normal([3, 3, 128, 256])),
+        'fc1': tf.Variable(tf.random_normal([8 * 8 * 256, 1024])),
+        'fc2': tf.Variable(tf.random_normal([1024, 1024])),
+        'out': tf.Variable(tf.random_normal([1024, 8]))
     }
 
     biases = {
-        'bc1': tf.Variable(tf.random_normal([weights['wc1'].get_shape().as_list()[3]]), name='bc1'),
-        'bc2': tf.Variable(tf.random_normal([weights['wc2'].get_shape().as_list()[3]]), name='bc2'),
-        # 'bc3': tf.Variable(tf.random_normal([weights['wc3'].get_shape().as_list()[3]])),
-        'bd1': tf.Variable(tf.random_normal([weights['wd1'].get_shape().as_list()[1]]), name='bd1'),
-        # 'bd2': tf.Variable(tf.random_normal([weights['wd2'].get_shape().as_list()[1]])),
-        'out': tf.Variable(tf.random_normal([weights['out'].get_shape().as_list()[1]], name='out'))
+        'c1': tf.Variable(tf.random_normal([weights['c1'].get_shape().as_list()[3]])),
+        'c2': tf.Variable(tf.random_normal([weights['c2'].get_shape().as_list()[3]])),
+        'c3': tf.Variable(tf.random_normal([weights['c3'].get_shape().as_list()[3]])),
+        'fc1': tf.Variable(tf.random_normal([weights['fc1'].get_shape().as_list()[1]])),
+        'fc2': tf.Variable(tf.random_normal([weights['fc2'].get_shape().as_list()[1]])),
+        'out': tf.Variable(tf.random_normal([weights['out'].get_shape().as_list()[1]]))
     }
 
     # Reshape input picture
     x_in = tf.reshape(x, shape=[-1, 128, 128, 3])
-    x_in = tf.image.resize_images(x_in, size=[64, 64])
-
     tf.image_summary('x_in', x_in)
 
-    # Convolution Layers
-    conv1 = conv2d_with_relu(x_in, weights['wc1'], biases['bc1'])
-    conv1 = maxpool2d(conv1, k=2)
-    print(conv1)
+    # Convolution Layers, strides=0
+    conv = conv2d_with_relu(x_in, weights['c1'], biases['c1'], strides=2)
+    conv = maxpool2d(conv, k=2)
 
-    conv2 = conv2d_with_relu(conv1, weights['wc2'], biases['bc2'])
-    conv2 = maxpool2d(conv2, k=2)
-    print(conv2)
+    conv = conv2d_with_relu(conv, weights['c2'], biases['c2'])
+    conv = maxpool2d(conv, k=2)
 
-    # conv3 = conv2d_with_relu(conv2, weights['wc3'], biases['bc3'])
-    # conv3 = maxpool2d(conv3, k=2)
-    # print(conv3)
+    conv = conv2d_with_relu(conv, weights['c3'], biases['c3'])
+    conv = maxpool2d(conv, k=2)
 
     # Fully connected layers
-    fc1 = tf.reshape(conv2, [-1, weights['wd1'].get_shape().as_list()[0]])
+    fc = tf.reshape(conv, [-1, weights['fc1'].get_shape().as_list()[0]])
 
-    fc1 = tf.add(tf.matmul(fc1, weights['wd1']), biases['bd1'])
-    fc1 = tf.nn.relu(fc1)
-    fc1 = tf.nn.dropout(fc1, keep_prob)
+    fc = tf.add(tf.matmul(fc, weights['fc1']), biases['fc1'])
+    fc = tf.nn.relu(fc)
+    fc = tf.nn.dropout(fc, keep_prob)
 
-    # fc2 = tf.add(tf.matmul(fc1, weights['wd2']), biases['bd2'])
-    # fc2 = tf.nn.relu(fc2)
-    # fc2 = tf.nn.dropout(fc2, keep_prob)
+    fc = tf.add(tf.matmul(fc, weights['fc2']), biases['fc2'])
+    fc = tf.nn.relu(fc)
+    fc = tf.nn.dropout(fc, keep_prob)
 
     # Output, class prediction
-    out = tf.add(tf.matmul(fc1, weights['out']), biases['out'])
+    out = tf.add(tf.matmul(fc, weights['out']), biases['out'])
     return x, y, weights, biases, keep_prob, out
 
 
 def main(_):
 
-    dl.prepare_train_val_data(train_ratio=0.9)
+    dl.prepare_train_val_data(train_ratio=0.95)
 
     # Construct model
     #with tf.name_scope('Model'): #TODO: Causes issues with saving. Investigate.
@@ -98,7 +93,8 @@ def main(_):
     with tf.name_scope('Loss'):
         cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
         # L2 regularization for the fully connected parameters.
-        regularization_term = (tf.nn.l2_loss(weights['wd1']) + tf.nn.l2_loss(biases['bd1']) +
+        regularization_term = (tf.nn.l2_loss(weights['fc1']) + tf.nn.l2_loss(biases['fc1']) +
+                               tf.nn.l2_loss(weights['fc2']) + tf.nn.l2_loss(biases['fc2']) +
                                tf.nn.l2_loss(weights['out']) + tf.nn.l2_loss(biases['out']))
         cost += regularization_rate * regularization_term
     with tf.name_scope('Optimizer'):
@@ -114,7 +110,7 @@ def main(_):
 
     tf.scalar_summary("loss", cost)
     tf.scalar_summary("accuracy", accuracy)
-    tf.image_summary('wc1', tf.transpose(weights['wc1'], [3, 0, 1, 2]), max_images=30)
+    tf.image_summary('c1', tf.transpose(weights['c1'], [3, 0, 1, 2]), max_images=30)
     merged_summary_op = tf.merge_all_summaries()
 
     # Launch the graph
@@ -167,12 +163,6 @@ def main(_):
         saver = tf.train.Saver()
         saver.save(sess, model_path)
         print("---Final model saved in file: " + model_path)
-
-        print('First 5 values of biases')
-        print(biases['bc1'][:5].eval())
-        print(biases['bc2'][:5].eval())
-        print(biases['bd1'][:5].eval())
-        print(biases['out'][:5].eval())
 
         print "Run the command line:\n" \
               "--> tensorboard --logdir=/tmp/tensorflow_logs " \

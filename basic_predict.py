@@ -13,14 +13,6 @@ with tf.Session() as sess:
     saver.restore(sess, model_path)
     print "Model restored from file: %s" % model_path
 
-    # sess.run(init)
-
-    print('First 5 values of biases')
-    print(biases['bc1'][:5].eval())
-    print(biases['bc2'][:5].eval())
-    print(biases['bd1'][:5].eval())
-    print(biases['out'][:5].eval())
-
     # Make predictions
     print('Making predictions...')
     dl.prepare_test_data()
