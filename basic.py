@@ -3,8 +3,8 @@ import numpy as np
 from data_loader import dl
 
 learning_rate = 0.0001
-regularization_rate = 0.01
-training_epochs = 50
+regularization_rate = 0.001
+training_epochs = 10
 batch_size = 128
 dropout = 0.5
 
@@ -118,7 +118,7 @@ def main(_):
 
     tf.scalar_summary("loss", cost)
     tf.scalar_summary("accuracy", accuracy)
-    tf.image_summary('filters 1', tf.transpose(weights['c1'], [3, 0, 1, 2]), max_images=30)
+    tf.image_summary('filters 1', tf.transpose(weights['c1'], [3, 0, 1, 2]), max_images=100)
     merged_summary_op = tf.merge_all_summaries()
 
     # Launch the graph
@@ -151,16 +151,19 @@ def main(_):
 
                 valid_batch = 0
                 valid_acc = 0
+                valid_cost = 0
                 n_valid_batches = np.ceil(float(dl.n_valid) / batch_size)
                 while valid_batch < n_valid_batches:
                     valid_batch += 1
                     batch_x, batch_y = dl.next_valid_batch(batch_size)
-                    valid_batch_acc = sess.run(accuracy, feed_dict={x: batch_x, y: batch_y, keep_prob: 1.})
+                    valid_batch_cost, valid_batch_acc = sess.run([cost, accuracy], feed_dict={x: batch_x, y: batch_y, keep_prob: 1.})
                     valid_acc += valid_batch_acc * batch_x.shape[0] / dl.n_valid
+                    valid_cost += valid_batch_cost * batch_x.shape[0] / dl.n_valid
                 valid_summary = tf.Summary()
                 valid_summary.value.add(tag="accuracy", simple_value=valid_acc)
+                valid_summary.value.add(tag="loss", simple_value=valid_cost)
                 valid_summary_writer.add_summary(valid_summary, step)
-                print("Validation Accuracy= " + "{:.5f}".format(valid_acc))
+                print("Validation Accuracy= " + "{:.5f}".format(valid_acc) + ', Loss=' + "{:.5f}".format(valid_cost))
 
             # if step % (3*batches_per_epoch) == 0:
             #     save_path = saver.save(sess, model_path)
