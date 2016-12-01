@@ -49,7 +49,7 @@ class DataProcessor:
 
         flip_lr = lambda x_i: tf.image.flip_left_right(x_i).eval()
         o_size = x.shape[1]
-        c_size = 84
+        c_size = 96
         crop_base = lambda x_i, top_left_y, top_left_x: tf.image.resize_images(
             tf.image.crop_to_bounding_box(x_i, top_left_y, top_left_x, c_size, c_size), [o_size, o_size],
             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR).eval()
@@ -97,7 +97,6 @@ class DataProcessor:
 
         image_ops = [
             [flip_lr],
-            [crop_tl, crop_tr, crop_bl, crop_br, crop_mid],
             [bright_1, bright_2],
             [contr_1, contr_2],
             [sat_1, sat_2, sat_3, sat_4]
@@ -116,7 +115,7 @@ class DataProcessor:
                     for i in range(0, len(x_in_label[label])):
                         op_index = 0
                         # Until all ops in the op type are done OR there are enough images in the class
-                        while op_index < n_ops_in_type and label_counts[label] < max_label_count:
+                        while op_index < n_ops_in_type and label_counts[label] < max_label_count / 2:
                             new_image = image_ops[op_type][op_index](x_in_label[label][i])
                             x = np.concatenate((x, np.asarray([new_image])))
                             y = np.concatenate((y, np.asarray([label])))
@@ -158,8 +157,11 @@ class DataProcessor:
 
     def load_and_save_test_data(self):
         test_x = self.__load_data('val')
+        hidden_test_x = self.__load_data('hidden')
+        full_test_x = np.concatenate((test_x, hidden_test_x))
+        print(full_test_x.shape)
         print('Saving data...')
-        np.savez_compressed(test_data_filename, x=test_x)
+        np.savez_compressed(test_data_filename, x=full_test_x)
         print('Done')
 
     @staticmethod
@@ -186,5 +188,5 @@ if __name__ == '__main__':
 
     # dp.load_augment_and_save_train_data()
     # dp.load_augment_and_save_train_data(resume_from_file=True)
-    # dp.load_and_save_test_data()
-    dp.load_and_save_orig_train_data()
+    dp.load_and_save_test_data()
+    # dp.load_and_save_orig_train_data()
